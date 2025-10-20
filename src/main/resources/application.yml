@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: meeting-one-line
+  datasource:
+    url: jdbc:mariadb://localhost:3306/meeting_one_line
+    username: root
+    password: 1234
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MariaDBDialect
+
+  servlet:
+    multipart:
+      max-file-size: 1GB
+      max-request-size: 1GB
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+jwt:
+  secret: my-jwt-secret-key-change-it
+  expiration: 3600000 # 1 hour
+  refresh-expiration: 1209600000 # 14 days
+
+logging:
+  level:
+    org.hibernate.SQL: debug
