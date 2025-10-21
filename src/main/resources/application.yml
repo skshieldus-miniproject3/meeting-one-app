@@ -30,6 +30,9 @@ jwt:
   access-expiration: 1800000      # 30분 (1000 * 60 * 30)
   refresh-expiration: 1209600000  # 14일 (1000 * 60 * 60 * 24 * 14)
 
+file:
+  upload-dir: ./uploads/meetings   # 업로드 디렉토리 경로 설정
+
 logging:
   level:
     org.hibernate.SQL: debug
