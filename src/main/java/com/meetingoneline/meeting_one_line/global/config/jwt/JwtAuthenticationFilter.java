@@ -32,7 +32,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     /**
-     * ✅ Swagger, Auth, Health 요청은 필터를 적용하지 않음
+     * Swagger, Auth, Health 요청은 필터를 적용하지 않음
      */
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {

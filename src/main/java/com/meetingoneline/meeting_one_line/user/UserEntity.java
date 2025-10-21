@@ -1,5 +1,5 @@
 package com.meetingoneline.meeting_one_line.user;
-import com.meetingoneline.meeting_one_line.auth.RefreshTokenEntity;
+import com.meetingoneline.meeting_one_line.auth.refresh_token.RefreshTokenEntity;
 import com.meetingoneline.meeting_one_line.global.entity.SoftDeletableEntity;
 import com.meetingoneline.meeting_one_line.meeting.entity.MeetingEntity;
 import jakarta.persistence.*;
@@ -30,4 +30,13 @@ public class UserEntity extends SoftDeletableEntity {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<RefreshTokenEntity> refreshTokens = new ArrayList<>();
+
+    public static UserEntity create(String email, String password, String nickname){
+        UserEntity user = new UserEntity();
+        user.email = email;
+        user.password = password;
+        user.nickname=  nickname;
+
+        return user;
+    }
 }

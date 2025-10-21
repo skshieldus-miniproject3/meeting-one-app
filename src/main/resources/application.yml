@@ -23,14 +23,14 @@ spring:
 
 server:
   port: 8080
-  servlet:
-    context-path: /api
 
 jwt:
-  secret: my-jwt-secret-key-change-it
+  secret: bXktand0LXNlY3JldC1rZXktY2hhbmdlLWl0
   expiration: 3600000 # 1 hour
-  refresh-expiration: 1209600000 # 14 days
+  access-expiration: 1800000      # 30분 (1000 * 60 * 30)
+  refresh-expiration: 1209600000  # 14일 (1000 * 60 * 60 * 24 * 14)
 
 logging:
   level:
     org.hibernate.SQL: debug
+    org.springframework.security: debug

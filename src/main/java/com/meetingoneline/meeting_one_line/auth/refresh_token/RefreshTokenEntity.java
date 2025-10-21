@@ -1,4 +1,4 @@
-package com.meetingoneline.meeting_one_line.auth;
+package com.meetingoneline.meeting_one_line.auth.refresh_token;
 
 import com.meetingoneline.meeting_one_line.global.entity.BaseEntity;
 import com.meetingoneline.meeting_one_line.user.UserEntity;
@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.SQLRestriction;
 
 @Getter
 @Entity
@@ -19,4 +18,12 @@ public class RefreshTokenEntity extends BaseEntity {
 
     @Column(nullable = false, length = 512)
     private String token;
+
+    public static RefreshTokenEntity create(UserEntity user, String token){
+        RefreshTokenEntity tokenEntity = new RefreshTokenEntity();
+        tokenEntity.user = user;
+        tokenEntity.token = token;
+
+        return tokenEntity;
+    }
 }
