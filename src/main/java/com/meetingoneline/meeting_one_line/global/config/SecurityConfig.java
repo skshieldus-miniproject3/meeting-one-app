@@ -1,5 +1,6 @@
 package com.meetingoneline.meeting_one_line.global.config;
 
+import com.meetingoneline.meeting_one_line.global.config.jwt.JwtAuthenticationEntryPoint;
 import com.meetingoneline.meeting_one_line.global.config.jwt.JwtAuthenticationFilter;
 import com.meetingoneline.meeting_one_line.global.config.jwt.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -40,6 +42,11 @@ public class SecurityConfig {
                 // 3. 기본 로그인 비활성화
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
+
+                // 3.5. 예외 처리 추가
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jwtAuthenticationEntryPoint) // 인증 실패 시 401 반환
+                )
 
                 // 4. 요청별 접근 허용
                 .authorizeHttpRequests(auth -> auth

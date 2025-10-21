@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * JWT 생성 및 검증을 담당하는 Provider
@@ -62,8 +63,8 @@ public class JwtTokenProvider {
      * (UserId를 Authentication의 Principal로 사용)
      */
     public Authentication getAuthentication(String token) {
-        String userId = getUserIdFromToken(token);
-        return new UsernamePasswordAuthenticationToken(userId, "", List.of());
+        UUID userId = UUID.fromString(getUserIdFromToken(token)); // ✅ 문자열 → UUID
+        return new UsernamePasswordAuthenticationToken(userId, null, List.of());
     }
 
     /**
