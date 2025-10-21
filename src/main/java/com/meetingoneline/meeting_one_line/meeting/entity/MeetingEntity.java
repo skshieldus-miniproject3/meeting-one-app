@@ -46,7 +46,10 @@ public class MeetingEntity extends SoftDeletableEntity {
     @OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<KeywordEntity> keywords = new ArrayList<>();
 
-    public static  MeetingEntity create(UserEntity user, String title, LocalDateTime date, String filePath) {
+    /**
+     * meeting entity 생성
+     */
+    public static MeetingEntity create(UserEntity user, String title, LocalDateTime date, String filePath) {
         MeetingEntity meeting = new MeetingEntity();
         meeting.user = user;
         meeting.title = title;
@@ -55,5 +58,17 @@ public class MeetingEntity extends SoftDeletableEntity {
         meeting.status = RecordSaveStatus.UPLOADED;
 
         return meeting;
+    }
+
+    /**
+     * metting status 변경
+     */
+    public void updateStatusAndSummary(String status, String summary) {
+        try {
+            this.status = RecordSaveStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            this.status = RecordSaveStatus.PROCESSING; // fallback
+        }
+        this.summary = summary;
     }
 }

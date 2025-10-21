@@ -23,4 +23,13 @@ public class SegmentEntity extends BaseEntity {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String text;
+
+    public static SegmentEntity create(SpeakerEntity speaker, Float startTime, Float endTime, String text){
+        SegmentEntity seg = new SegmentEntity();
+        seg.speaker = speaker;
+        seg.startTime = startTime;
+        seg.endTime = endTime;
+        seg.text = text;
+        return seg;
+    }
 }

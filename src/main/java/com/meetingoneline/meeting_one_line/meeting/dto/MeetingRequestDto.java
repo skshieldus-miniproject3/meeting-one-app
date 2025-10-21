@@ -1,0 +1,66 @@
+package com.meetingoneline.meeting_one_line.meeting.dto;
+
+import com.meetingoneline.meeting_one_line.meeting.enums.RecordSaveStatus;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+public class MeetingRequestDto {
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "회의 업로드 요청 DTO")
+    public static class CreateRequest {
+        @Schema(description = "회의 제목", example = "AI 기획 회의")
+        private String title;
+
+        @Schema(description = "회의 일시 (YYYY-MM-DDTHH:mm:ss)", example = "2025-10-21T14:00:00")
+        private LocalDateTime date;
+
+        @Schema(description = "회의 음성 파일 (wav/mp3)", type = "string", format = "binary")
+        private MultipartFile file;
+    }
+
+    /**
+     * ai 분석 후 > callback api 요청
+     */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(name = "MeetingRequestDto.AiCallbackRequest", description = "AI 분석 결과 콜백 요청 DTO")
+    public static class AiCallbackRequest{
+        @Schema(description = "상태", example = "completed")
+        private String status;
+
+        @Schema(description = "회의 요약문", example = "AI 회의록 시스템 구조 논의")
+        private String summary;
+
+        @Schema(description = "핵심 키워드 목록", example = "[\"AI\", \"요약\", \"화자분리\"]")
+        private List<String> keywords;
+        private List<Speaker> speakers;
+
+        @Getter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class Speaker {
+            private String speakerId;
+            private List<Segment> segments;
+        }
+
+        @Getter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class Segment {
+            private Float start;
+            private Float end;
+            private String text;
+        }
+    }
+}

@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -17,4 +18,12 @@ public class KeywordEntity extends BaseEntity {
 
     @Column(nullable = false, length = 100)
     private String keyword;
+
+    public static KeywordEntity create(MeetingEntity meeting, String keyword){
+        KeywordEntity _keyword = new KeywordEntity();
+        _keyword.meeting = meeting;
+        _keyword.keyword = keyword;
+
+        return _keyword;
+    }
 }

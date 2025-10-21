@@ -24,4 +24,13 @@ public class SpeakerEntity extends BaseEntity {
 
     @OneToMany(mappedBy = "speaker", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SegmentEntity> segments = new ArrayList<>();
+
+    public static SpeakerEntity create(MeetingEntity meeting, String speakerId, String name){
+        SpeakerEntity speaker = new SpeakerEntity();
+        speaker.meeting = meeting;
+        speaker.speakerId = speakerId;
+        speaker.name = name;
+
+        return speaker;
+    }
 }
