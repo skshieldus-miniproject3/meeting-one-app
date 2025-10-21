@@ -100,10 +100,12 @@ public class AuthService {
     }
 
     /**
-     * 재석님 > 내정보 조회
+     * 재석님 > 내정보 조회22
      */
+    // user table 유저 정보 가져오기
 
     /**
      * 재석님 > 로그아웃
      */
+    // user table refresh_token 지우면
 }
