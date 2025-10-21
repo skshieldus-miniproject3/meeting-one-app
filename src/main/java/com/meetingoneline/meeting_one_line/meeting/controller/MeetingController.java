@@ -59,7 +59,7 @@ public class MeetingController {
     }
 
     @Operation(
-            summary = "AI 분석 결과 콜백",
+            summary = "AI 분석 결과 콜백 (AI 서버 전용)",
             description = "AI 서버가 분석 완료 후 회의 결과 데이터를 전달합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     content = @Content(
@@ -80,6 +80,30 @@ public class MeetingController {
             @RequestBody MeetingRequestDto.AiCallbackRequest request
     ) {
         MeetingResponseDto.AiCallbackResponse response = meetingService.processCallback(meetingId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "회의록 목록 조회 (검색/페이지네이션 지원)",
+            description = "저장된 회의록 목록을 페이지 단위로 조회하며, title/summary/status별 검색을 지원합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = MeetingResponseDto.ListResponse.class))),
+                    @ApiResponse(responseCode = "401", description = "인증 실패",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @GetMapping
+    public ResponseEntity<MeetingResponseDto.ListResponse> getMeetings(
+            @AuthenticationPrincipal UUID userId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String summary,
+            @RequestParam(required = false) String status
+    ) {
+        MeetingResponseDto.ListResponse response = meetingService.getMeetings(userId, page, size, keyword, title, summary, status);
         return ResponseEntity.ok(response);
     }
 }

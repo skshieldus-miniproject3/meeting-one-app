@@ -10,11 +10,17 @@ import com.meetingoneline.meeting_one_line.meeting.entity.SegmentEntity;
 import com.meetingoneline.meeting_one_line.meeting.entity.SpeakerEntity;
 import com.meetingoneline.meeting_one_line.meeting.enums.RecordSaveStatus;
 import com.meetingoneline.meeting_one_line.meeting.repository.MeetingRepository;
+import com.meetingoneline.meeting_one_line.meeting.repository.MeetingSpecification;
 import com.meetingoneline.meeting_one_line.user.UserEntity;
 import com.meetingoneline.meeting_one_line.user.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -131,6 +137,52 @@ public class MeetingService {
         return MeetingResponseDto.AiCallbackResponse.builder()
                                                     .message("회의록 결과가 성공적으로 저장되었습니다.")
                                                     .build();
+    }
+
+    @Transactional(readOnly = true)
+    public MeetingResponseDto.ListResponse getMeetings(
+            UUID userId,
+            int page,
+            int size,
+            String keyword,
+            String title,
+            String summary,
+            String status
+    ) {
+        UserEntity user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // JPA Specification 사용 (동적 쿼리)
+        Specification<MeetingEntity> spec = null;
+
+        // 기본 필터: 유저 조건 추가
+        spec = and(spec, MeetingSpecification.byUser(user));
+
+        // keyword / title / summary / status 조건 추가
+        spec = and(spec, keyword != null && !keyword.isBlank() ? MeetingSpecification.titleOrSummaryContains(keyword) : null);
+        spec = and(spec, title != null && !title.isBlank() ? MeetingSpecification.titleContains(title) : null);
+        spec = and(spec, summary != null && !summary.isBlank() ? MeetingSpecification.summaryContains(summary) : null);
+
+        if (status != null && !status.isBlank()) {
+            try {
+                RecordSaveStatus recordStatus = RecordSaveStatus.valueOf(status.toUpperCase());
+                spec = and(spec, MeetingSpecification.hasStatus(recordStatus));
+            } catch (IllegalArgumentException ignored) {
+                log.warn("⚠️ 잘못된 status 파라미터: {}", status);
+            }
+        }
+
+        Page<MeetingEntity> result = meetingRepository.findAll(spec, pageable);
+
+        return MeetingResponseDto.ListResponse.from(result);
+    }
+
+    private <T> Specification<T> and(Specification<T> base, Specification<T> next) {
+        if (base == null) return next;
+        if (next == null) return base;
+        return base.and(next);
     }
 
 }
