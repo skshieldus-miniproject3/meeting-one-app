@@ -32,7 +32,8 @@ public enum ErrorCode {
 
     // 4. 회의록 / 데이터 관련
     MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "회의록을 찾을 수 없습니다."),
-    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.");
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, "유효하지 않은 파일입니다.");
 
     private final HttpStatus status;
     private final String message;
