@@ -132,6 +132,7 @@ public class MeetingResponseDto {
         @Schema(description = "화자 정보")
         public static class Speaker {
             private String speakerId;
+            private String name;
             private List<Segment> segments;
         }
 

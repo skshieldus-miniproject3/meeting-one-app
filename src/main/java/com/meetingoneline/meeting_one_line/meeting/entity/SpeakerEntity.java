@@ -7,6 +7,7 @@ import lombok.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@Setter
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
@@ -17,10 +18,10 @@ public class SpeakerEntity extends BaseEntity {
     private MeetingEntity meeting;
 
     @Column(name = "speaker_id", nullable = false, length = 10)
-    private String speakerId; // 예: S1, S2
+    private String speakerId; // 예: S1, S2, 임시 별칭
 
     @Column(length = 100)
-    private String name;
+    private String name;    // 유저가 지정한 이름
 
     @OneToMany(mappedBy = "speaker", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SegmentEntity> segments = new ArrayList<>();

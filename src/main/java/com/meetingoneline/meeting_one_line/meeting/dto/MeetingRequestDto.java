@@ -78,6 +78,18 @@ public class MeetingRequestDto {
 
         @Schema(description = "핵심 키워드 목록", example = "[\"LLM\", \"Whisper\", \"요약\"]")
         private List<String> keywords;
+
+        private List<SpeakerUpdate> speakers;
+
+        @Getter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        @Schema(description = "화자 이름 수정 DTO")
+        public static class SpeakerUpdate {
+            private String speakerId;
+            private String name;
+        }
     }
 
 }

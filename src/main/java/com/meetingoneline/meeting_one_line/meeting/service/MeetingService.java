@@ -139,6 +139,13 @@ public class MeetingService {
                                                     .build();
     }
 
+    /**
+     * 회의 상세 조회
+     * @param keyword 회의 키워드
+     * @param summary 회의 내용
+     * @param status 회의 분석 상태
+     * @return
+     */
     @Transactional(readOnly = true)
     public MeetingResponseDto.ListResponse getMeetings(
             UUID userId,
@@ -185,6 +192,9 @@ public class MeetingService {
         return base.and(next);
     }
 
+    /**
+     * 회의 상세 조회
+     */
     @Transactional(readOnly = true)
     public MeetingResponseDto.DetailResponse getMeetingDetail(UUID userId, UUID meetingId) {
         // 1. 유저 및 회의 검증
@@ -206,6 +216,7 @@ public class MeetingService {
         var speakers = meeting.getSpeakers().stream()
                               .map(speaker -> MeetingResponseDto.DetailResponse.Speaker.builder()
                                                                                        .speakerId(speaker.getSpeakerId())
+                                                                                       .name(speaker.getName())
                                                                                        .segments(speaker.getSegments().stream()
                                                                                        .map(seg -> MeetingResponseDto.DetailResponse.Segment.builder()
                                                                                                                                                              .start(seg.getStartTime())
@@ -257,6 +268,20 @@ public class MeetingService {
             request.getKeywords().forEach(keyword ->
                     meeting.getKeywords().add(KeywordEntity.create(meeting, keyword))
             );
+        }
+
+        // 화자 이름 수정 추가
+        if (request.getSpeakers() != null) {
+            for (MeetingRequestDto.UpdateRequest.SpeakerUpdate speakerReq : request.getSpeakers()) {
+                meeting.getSpeakers().stream()
+                       .filter(s -> s.getSpeakerId().equals(speakerReq.getSpeakerId()))
+                       .findFirst()
+                       .ifPresent(s -> {
+                           if (speakerReq.getName() != null && !speakerReq.getName().isBlank()) {
+                               s.setName(speakerReq.getName());
+                           }
+                       });
+            }
         }
 
         meetingRepository.save(meeting);
