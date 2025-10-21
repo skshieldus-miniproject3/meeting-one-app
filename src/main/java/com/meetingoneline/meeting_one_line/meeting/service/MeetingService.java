@@ -185,4 +185,114 @@ public class MeetingService {
         return base.and(next);
     }
 
+    @Transactional(readOnly = true)
+    public MeetingResponseDto.DetailResponse getMeetingDetail(UUID userId, UUID meetingId) {
+        // 1. 유저 및 회의 검증
+        UserEntity user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        MeetingEntity meeting = meetingRepository.findById(meetingId)
+                                                 .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+
+        if (!meeting.getUser().getId().equals(user.getId())) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 2. 키워드 및 화자 데이터 변환
+        var keywords = meeting.getKeywords().stream()
+                              .map(KeywordEntity::getKeyword)
+                              .toList();
+
+        var speakers = meeting.getSpeakers().stream()
+                              .map(speaker -> MeetingResponseDto.DetailResponse.Speaker.builder()
+                                                                                       .speakerId(speaker.getSpeakerId())
+                                                                                       .segments(speaker.getSegments().stream()
+                                                                                       .map(seg -> MeetingResponseDto.DetailResponse.Segment.builder()
+                                                                                                                                                             .start(seg.getStartTime())
+                                                                                                                                                             .end(seg.getEndTime())
+                                                                                                                                                             .text(seg.getText())
+                                                                                                                                                             .build())
+                                                                                                        .toList())
+                                                                                       .build())
+                              .toList();
+
+        // 3. 응답 구성
+        return MeetingResponseDto.DetailResponse.builder()
+                                                .meetingId(meeting.getId())
+                                                .title(meeting.getTitle())
+                                                .date(meeting.getDate())
+                                                .status(meeting.getStatus().name().toLowerCase())
+                                                .summary(meeting.getSummary())
+                                                .keywords(keywords)
+                                                .speakers(speakers)
+                                                .filePath(meeting.getFilePath())
+                                                .build();
+    }
+
+    @Transactional
+    public MeetingResponseDto.CommonMessage updateMeeting(UUID userId, UUID meetingId, MeetingRequestDto.UpdateRequest request) {
+        UserEntity user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        MeetingEntity meeting = meetingRepository.findByIdAndDeletedAtIsNull(meetingId)
+                                                 .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+
+        if (!meeting.getUser().getId().equals(user.getId())) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // 제목 수정
+        if (request.getTitle() != null && !request.getTitle().isBlank()) {
+            meeting.setTitle(request.getTitle());
+        }
+
+        // 요약문 수정
+        if (request.getSummary() != null && !request.getSummary().isBlank()) {
+            meeting.updateStatusAndSummary(meeting.getStatus().name(), request.getSummary());
+        }
+
+        // 키워드 수정
+        if (request.getKeywords() != null) {
+            meeting.getKeywords().clear();
+            request.getKeywords().forEach(keyword ->
+                    meeting.getKeywords().add(KeywordEntity.create(meeting, keyword))
+            );
+        }
+
+        meetingRepository.save(meeting);
+
+        return MeetingResponseDto.CommonMessage.builder()
+                                               .message("회의록이 수정되었습니다.")
+                                               .build();
+    }
+
+    @Transactional
+    public MeetingResponseDto.CommonMessage deleteMeeting(UUID userId, UUID meetingId) {
+        UserEntity user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        MeetingEntity meeting = meetingRepository.findById(meetingId)
+                                                 .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+
+        if (!meeting.getUser().getId().equals(user.getId())) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED);
+        }
+
+        // Soft Delete 처리
+        meeting.delete();
+
+        // 로컬 파일 삭제 시도 (선택)
+        File file = new File(meeting.getFilePath());
+        if (file.exists()) {
+            boolean deleted = file.delete();
+            log.info("🗑 파일 삭제됨: {} (성공여부: {})", file.getAbsolutePath(), deleted);
+        }
+
+        meetingRepository.save(meeting);
+
+        return MeetingResponseDto.CommonMessage.builder()
+                                               .message("회의록이 삭제되었습니다.")
+                                               .build();
+    }
+
 }

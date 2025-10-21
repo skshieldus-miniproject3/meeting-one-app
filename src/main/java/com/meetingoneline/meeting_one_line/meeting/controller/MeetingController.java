@@ -106,4 +106,73 @@ public class MeetingController {
         MeetingResponseDto.ListResponse response = meetingService.getMeetings(userId, page, size, keyword, title, summary, status);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(
+            summary = "회의록 상세 조회",
+            description = "특정 회의의 상세 정보 및 분석 결과를 조회합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = MeetingResponseDto.DetailResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "회의를 찾을 수 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @GetMapping("/{id}")
+    public ResponseEntity<MeetingResponseDto.DetailResponse> getMeetingDetail(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable("id") UUID meetingId
+    ) {
+        MeetingResponseDto.DetailResponse response = meetingService.getMeetingDetail(userId, meetingId);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "회의록 수정",
+            description = "회의 제목, 요약문, 키워드 등을 수정합니다.",
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = MeetingRequestDto.UpdateRequest.class)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "수정 성공",
+                            content = @Content(schema = @Schema(implementation = MeetingResponseDto.CommonMessage.class))),
+                    @ApiResponse(responseCode = "404", description = "회의를 찾을 수 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "403", description = "권한 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @PutMapping("/{id}")
+    public ResponseEntity<MeetingResponseDto.CommonMessage> updateMeeting(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable("id") UUID meetingId,
+            @RequestBody MeetingRequestDto.UpdateRequest request
+    ) {
+        MeetingResponseDto.CommonMessage response = meetingService.updateMeeting(userId, meetingId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(
+            summary = "회의록 삭제",
+            description = "특정 회의록 및 관련 파일을 Soft Delete 처리합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "삭제 성공",
+                            content = @Content(schema = @Schema(implementation = MeetingResponseDto.CommonMessage.class))),
+                    @ApiResponse(responseCode = "404", description = "회의를 찾을 수 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "403", description = "권한 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @DeleteMapping("/{id}")
+    public ResponseEntity<MeetingResponseDto.CommonMessage> deleteMeeting(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable("id") UUID meetingId
+    ) {
+        MeetingResponseDto.CommonMessage response = meetingService.deleteMeeting(userId, meetingId);
+        return ResponseEntity.ok(response);
+    }
+
 }

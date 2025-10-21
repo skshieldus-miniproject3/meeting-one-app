@@ -63,4 +63,21 @@ public class MeetingRequestDto {
             private String text;
         }
     }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "회의 수정 요청 DTO")
+    public static class UpdateRequest {
+        @Schema(description = "회의 제목", example = "AI 회의록 개선 회의")
+        private String title;
+
+        @Schema(description = "요약문", example = "AI 시스템 개선 방안 논의")
+        private String summary;
+
+        @Schema(description = "핵심 키워드 목록", example = "[\"LLM\", \"Whisper\", \"요약\"]")
+        private List<String> keywords;
+    }
+
 }

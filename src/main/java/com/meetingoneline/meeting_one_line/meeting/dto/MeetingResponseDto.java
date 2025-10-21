@@ -94,4 +94,67 @@ public class MeetingResponseDto {
                                .build();
         }
     }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "회의 상세 조회 응답 DTO")
+    public static class DetailResponse {
+        @Schema(description = "회의 UUID", example = "c41b89b7-0b69-4c90-9d3f-3a258fe682c4")
+        private UUID meetingId;
+
+        @Schema(description = "회의 제목", example = "AI 회의록 설계 회의")
+        private String title;
+
+        @Schema(description = "회의 일시", example = "2025-10-20T15:00:00")
+        private LocalDateTime date;
+
+        @Schema(description = "회의 상태", example = "completed")
+        private String status;
+
+        @Schema(description = "회의 요약문", example = "AI 회의록 시스템 구조 논의")
+        private String summary;
+
+        @Schema(description = "핵심 키워드 목록")
+        private List<String> keywords;
+
+        @Schema(description = "화자 목록")
+        private List<Speaker> speakers;
+
+        @Schema(description = "파일 경로", example = "/data/uploads/meeting_123.wav")
+        private String filePath;
+
+        @Getter
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Schema(description = "화자 정보")
+        public static class Speaker {
+            private String speakerId;
+            private List<Segment> segments;
+        }
+
+        @Getter
+        @Builder
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Schema(description = "화자 세그먼트 정보")
+        public static class Segment {
+            private Float start;
+            private Float end;
+            private String text;
+        }
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "공통 메시지 응답 DTO")
+    public static class CommonMessage {
+        @Schema(description = "응답 메시지", example = "회의록이 수정되었습니다.")
+        private String message;
+    }
+
 }
