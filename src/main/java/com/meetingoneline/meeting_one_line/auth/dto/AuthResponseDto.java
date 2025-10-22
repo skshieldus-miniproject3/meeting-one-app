@@ -42,4 +42,12 @@ public class AuthResponseDto {
 
 
     /* 재석님 */
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class UserInfo {
+        private String email;
+        private String nickname;
+    }
 }
