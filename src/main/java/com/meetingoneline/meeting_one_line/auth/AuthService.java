@@ -15,6 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -102,8 +104,23 @@ public class AuthService {
     /**
      * 재석님 > 내정보 조회
      */
+    public AuthResponseDto.UserInfo getMyInfo(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        return AuthResponseDto.UserInfo.builder()
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .build();
+    }
 
     /**
      * 재석님 > 로그아웃
      */
+    @Transactional
+    public void logout(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        refreshTokenRepository.deleteByUser(user);
+    }
 }

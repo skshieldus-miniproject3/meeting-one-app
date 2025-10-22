@@ -12,7 +12,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
@@ -86,9 +89,38 @@ public class AuthController {
     /**
      * 재석님 > 내 정보 조회 API
      */
+    @Operation(
+            summary = "내 정보 조회",
+            description = "현재 로그인된 사용자의 정보를 조회합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = AuthResponseDto.UserInfo.class))),
+                    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @GetMapping("/me")
+    public ResponseEntity<AuthResponseDto.UserInfo> getMyInfo(@AuthenticationPrincipal UUID userId) {
+        AuthResponseDto.UserInfo response = authService.getMyInfo(userId);
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * 재석님 > 로그아웃 API
      */
+    @Operation(
+            summary = "로그아웃",
+            description = "서버에서 Refresh Token을 삭제하여 로그아웃 처리합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "로그아웃 성공"),
+                    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없음",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+            }
+    )
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@AuthenticationPrincipal UUID userId) {
+        authService.logout(userId);
+        return ResponseEntity.ok().build();
+    }
 
 }
