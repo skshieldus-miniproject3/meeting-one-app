@@ -113,7 +113,9 @@ public class MeetingController {
             responses = {
                     @ApiResponse(responseCode = "200", description = "조회 성공",
                             content = @Content(schema = @Schema(implementation = MeetingResponseDto.DetailResponse.class))),
-                    @ApiResponse(responseCode = "404", description = "회의를 찾을 수 없음",
+                    @ApiResponse(responseCode = "404", description = "회의록을 찾을 수 없습니다.",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "403", description = "접근 권한이 없습니다.",
                             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
             }
     )
@@ -138,9 +140,9 @@ public class MeetingController {
             responses = {
                     @ApiResponse(responseCode = "200", description = "수정 성공",
                             content = @Content(schema = @Schema(implementation = MeetingResponseDto.CommonMessage.class))),
-                    @ApiResponse(responseCode = "404", description = "회의를 찾을 수 없음",
+                    @ApiResponse(responseCode = "404", description = "회의록을 찾을 수 없습니다.",
                             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-                    @ApiResponse(responseCode = "403", description = "권한 없음",
+                    @ApiResponse(responseCode = "403", description = "접근 권한이 없습니다.",
                             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
             }
     )
@@ -160,9 +162,9 @@ public class MeetingController {
             responses = {
                     @ApiResponse(responseCode = "200", description = "삭제 성공",
                             content = @Content(schema = @Schema(implementation = MeetingResponseDto.CommonMessage.class))),
-                    @ApiResponse(responseCode = "404", description = "회의를 찾을 수 없음",
+                    @ApiResponse(responseCode = "404", description = "회의록을 찾을 수 없습니다.",
                             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
-                    @ApiResponse(responseCode = "403", description = "권한 없음",
+                    @ApiResponse(responseCode = "403", description = "접근 권한이 없습니다.",
                             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
             }
     )

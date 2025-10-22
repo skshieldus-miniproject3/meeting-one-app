@@ -102,7 +102,7 @@ public class AuthService {
     }
 
     /**
-     * 재석님 > 내정보 조회
+     * 재석님 > 내정보 조회22
      */
     public AuthResponseDto.UserInfo getMyInfo(UUID userId) {
         UserEntity user = userRepository.findById(userId)
