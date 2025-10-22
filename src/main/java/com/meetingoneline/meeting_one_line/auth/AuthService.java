@@ -109,6 +109,7 @@ public class AuthService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
         return AuthResponseDto.UserInfo.builder()
+                .id(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
                 .build();
