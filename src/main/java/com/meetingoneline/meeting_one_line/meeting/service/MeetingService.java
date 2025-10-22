@@ -2,6 +2,7 @@ package com.meetingoneline.meeting_one_line.meeting.service;
 
 import com.meetingoneline.meeting_one_line.global.exception.BusinessException;
 import com.meetingoneline.meeting_one_line.global.exception.ErrorCode;
+import com.meetingoneline.meeting_one_line.meeting.client.AiClient;
 import com.meetingoneline.meeting_one_line.meeting.dto.MeetingRequestDto;
 import com.meetingoneline.meeting_one_line.meeting.dto.MeetingResponseDto;
 import com.meetingoneline.meeting_one_line.meeting.entity.KeywordEntity;
@@ -27,6 +28,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.UUID;
 
 @Slf4j
@@ -37,10 +39,12 @@ public class MeetingService {
 
     private final MeetingRepository meetingRepository;
     private final UserRepository userRepository;
+    private final AiClient aiClient;
 
     @Value("${file.upload-dir:./uploads/meetings}")
     private String uploadDir;
 
+    @Transactional
     public MeetingResponseDto.CreateResponse uploadMeeting(UUID userId, MeetingRequestDto.CreateRequest request) {
         UserEntity user = userRepository.findById(userId)
                                         .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -76,8 +80,19 @@ public class MeetingService {
             MeetingEntity meeting = MeetingEntity.create(user, request.getTitle(), request.getDate(), destination.getAbsolutePath());
             MeetingEntity saved = meetingRepository.save(meeting);
 
-            // 5.AI 분석 요청 로그
-            log.info("[AI REQUEST] 회의 녹음 분석 요청 전송됨 meetingId={}", saved.getId());
+            // 5. AI 서버 분석 요청 시도
+            try {
+                aiClient.requestAnalysis(
+                        meeting.getId(),
+                        destination.getAbsolutePath(),
+                        error -> updateMeetingStatus(meeting.getId(), RecordSaveStatus.FAILED, "AI 서버 요청 실패")
+                );
+                meeting.updateStatusAndSummary(RecordSaveStatus.PROCESSING.name(), null);
+            } catch (Exception e) {
+                log.error("❌ AI 서버 요청 실패 - meetingId={}", meeting.getId(), e);
+                meeting.updateStatusAndSummary(RecordSaveStatus.FAILED.name(), "AI 서버 분석 요청 실패");
+            }
+
 
             return MeetingResponseDto.CreateResponse.builder()
                                                    .meetingId(UUID.fromString(saved.getId().toString()))
@@ -98,6 +113,25 @@ public class MeetingService {
     public MeetingResponseDto.AiCallbackResponse processCallback(UUID meetingId, MeetingRequestDto.AiCallbackRequest request) {
         MeetingEntity meeting = meetingRepository.findById(meetingId)
                                                  .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
+
+        log.info("📥 AI 콜백 수신: meetingId={}, status={}, summary={}", meetingId, request.getStatus(), request.getSummary());
+
+        // ✅ 화자 목록 로그 출력
+        if (request.getSpeakers() != null && !request.getSpeakers().isEmpty()) {
+            for (MeetingRequestDto.AiCallbackRequest.Speaker s : request.getSpeakers()) {
+                log.info("🎤 Speaker ID: {}", s.getSpeakerId());
+                if (s.getSegments() != null) {
+                    for (MeetingRequestDto.AiCallbackRequest.Segment seg : s.getSegments()) {
+                        log.info("🗣️  Segment - start: {}, end: {}, text: {}", seg.getStart(), seg.getEnd(), seg.getText());
+                    }
+                } else {
+                    log.warn("⚠️  Speaker({}) has no segments.", s.getSpeakerId());
+                }
+            }
+        } else {
+            log.warn("⚠️  AI 콜백에 화자 정보가 없습니다.");
+        }
+
 
         // 1. 회의 상태 및 요약문 업데이트
         meeting.updateStatusAndSummary(request.getStatus(), request.getSummary());
@@ -219,6 +253,7 @@ public class MeetingService {
                                                                                        .speakerId(speaker.getSpeakerId())
                                                                                        .name(speaker.getName())
                                                                                        .segments(speaker.getSegments().stream()
+                                                                                                        .sorted(Comparator.comparing(SegmentEntity::getStartTime))
                                                                                        .map(seg -> MeetingResponseDto.DetailResponse.Segment.builder()
                                                                                                                                                              .start(seg.getStartTime())
                                                                                                                                                              .end(seg.getEndTime())
@@ -321,4 +356,15 @@ public class MeetingService {
                                                .build();
     }
 
+    /**
+     * AI 요청 실패 등으로 상태 변경이 필요한 경우 호출
+     */
+    @Transactional
+    public void updateMeetingStatus(UUID meetingId, RecordSaveStatus status, String summary) {
+        meetingRepository.findById(meetingId).ifPresent(meeting -> {
+            meeting.updateStatusAndSummary(status.name(), summary);
+            meetingRepository.save(meeting);
+            log.warn("### 회의({}) 상태 변경됨 → {}", meetingId, status);
+        });
+    }
 }

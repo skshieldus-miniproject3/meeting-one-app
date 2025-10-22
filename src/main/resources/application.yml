@@ -37,3 +37,7 @@ logging:
   level:
     org.hibernate.SQL: debug
     org.springframework.security: debug
+
+ai:
+  server:
+    url: http://localhost:8000   # FastAPI 서버 주소

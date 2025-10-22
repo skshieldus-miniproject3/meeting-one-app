@@ -1,12 +1,10 @@
 package com.meetingoneline.meeting_one_line.meeting.dto;
 
-import com.meetingoneline.meeting_one_line.meeting.enums.RecordSaveStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.UUID;
 
 public class MeetingRequestDto {
     @Getter

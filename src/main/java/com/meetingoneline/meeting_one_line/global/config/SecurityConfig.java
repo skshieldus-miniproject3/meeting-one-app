@@ -58,6 +58,10 @@ public class SecurityConfig {
                                 "/api/auth/**",
                                 "/api/health"
                         ).permitAll()
+
+                        // AI 서버 콜백 전용 API
+                        .requestMatchers("/api/meetings/*/callback").permitAll()
+
                         .anyRequest().authenticated()
                 )
 
