@@ -30,10 +30,17 @@ public class AuthController {
             responses = {
                     @ApiResponse(responseCode = "201", description = "회원가입 성공",
                             content = @Content(schema = @Schema(implementation = AuthResponseDto.Signup.class))),
-                    @ApiResponse(responseCode = "400", description = "유효성 검사 실패", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "400-1", description = "올바른 형식의 이메일 주소여야 합니다, 비밀번호는 8자 이상 20자 이하이어야 합니다.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "400-2", description = "비밀번호는 8자 이상 20자 이하이어야 합니다.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "유효성 검사 실패", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
                     @ApiResponse(
-                            responseCode = "409",
-                            description = "중복된 이메일 또는 닉네임",
+                            responseCode = "409-1",
+                            description = "이미 등록된 이메일입니다.",
+                            content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
+                    ),
+                    @ApiResponse(
+                            responseCode = "409-2",
+                            description = "이미 사용 중인 닉네임입니다.",
                             content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))
                     )
             }
@@ -53,7 +60,9 @@ public class AuthController {
             responses = {
                     @ApiResponse(responseCode = "200", description = "로그인 성공",
                             content = @Content(schema = @Schema(implementation = AuthResponseDto.Login.class))),
-                    @ApiResponse(responseCode = "400", description = "잘못된 로그인 요청", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "사용자를 찾을 수 없습니다.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "400-1", description = "올바른 형식의 이메일 주소여야 합니다, 비밀번호는 8자 이상 20자 이하이어야 합니다.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+                    @ApiResponse(responseCode = "400-2", description = "비밀번호는 8자 이상 20자 이하이어야 합니다.", content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
             }
     )
     @PostMapping("/login")

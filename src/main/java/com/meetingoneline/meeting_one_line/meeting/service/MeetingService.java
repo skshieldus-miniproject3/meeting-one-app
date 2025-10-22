@@ -140,7 +140,7 @@ public class MeetingService {
     }
 
     /**
-     * 회의 상세 조회
+     * 회의 목록 조건 조회
      * @param keyword 회의 키워드
      * @param summary 회의 내용
      * @param status 회의 분석 상태
@@ -204,6 +204,7 @@ public class MeetingService {
         MeetingEntity meeting = meetingRepository.findById(meetingId)
                                                  .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
 
+        // 본인 회의가 아니면 접근 불가
         if (!meeting.getUser().getId().equals(user.getId())) {
             throw new BusinessException(ErrorCode.ACCESS_DENIED);
         }
