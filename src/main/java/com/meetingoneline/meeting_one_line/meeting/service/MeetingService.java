@@ -1,5 +1,6 @@
 package com.meetingoneline.meeting_one_line.meeting.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meetingoneline.meeting_one_line.global.exception.BusinessException;
 import com.meetingoneline.meeting_one_line.global.exception.ErrorCode;
 import com.meetingoneline.meeting_one_line.meeting.client.AiClient;
@@ -40,6 +41,7 @@ public class MeetingService {
     private final MeetingRepository meetingRepository;
     private final UserRepository userRepository;
     private final AiClient aiClient;
+    private final ObjectMapper objectMapper;
 
     @Value("${file.upload-dir:./uploads/meetings}")
     private String uploadDir;
@@ -151,7 +153,7 @@ public class MeetingService {
         // 4. 화자 및 세그먼트 추가
         if (request.getSpeakers() != null) {
             for (MeetingRequestDto.AiCallbackRequest.Speaker speakerReq : request.getSpeakers()) {
-                SpeakerEntity speaker = SpeakerEntity.create(meeting, speakerReq.getSpeakerId(), speakerReq.getSpeakerId());
+                SpeakerEntity speaker = SpeakerEntity.create(meeting, speakerReq.getSpeakerId(), null);
 
                 if (speakerReq.getSegments() != null) {
                     for (MeetingRequestDto.AiCallbackRequest.Segment seg : speakerReq.getSegments()) {
@@ -173,6 +175,30 @@ public class MeetingService {
                                                     .build();
     }
 
+    public MeetingResponseDto.ListResponse getMeetings(
+            UUID userId,
+            int page,
+            int size,
+            String keyword,
+            String title,
+            String summary,
+            String status
+    ) {
+        try {
+            String responseBody = aiClient.requestSearch(page, size, keyword, title, summary, status)
+                                          .block();
+
+            log.info("AI 서버 응답 수신 완료: {}", responseBody);
+
+            // FastAPI에서 내려주는 JSON 구조를 DTO로 역직렬화
+            return objectMapper.readValue(responseBody, MeetingResponseDto.ListResponse.class);
+
+        } catch (Exception e) {
+            log.error("AI 서버 회의록 목록 조회 중 오류 발생", e);
+            throw new RuntimeException("AI 서버 회의록 목록 조회 실패", e);
+        }
+    }
+
     /**
      * 회의 목록 조건 조회
      * @param keyword 회의 키워드
@@ -181,7 +207,7 @@ public class MeetingService {
      * @return
      */
     @Transactional(readOnly = true)
-    public MeetingResponseDto.ListResponse getMeetings(
+    public MeetingResponseDto.ListResponse getMeetings2(
             UUID userId,
             int page,
             int size,
@@ -306,15 +332,30 @@ public class MeetingService {
             );
         }
 
-        // 화자 이름 수정 추가
+        // 화자 및 세그먼트 수정
         if (request.getSpeakers() != null) {
             for (MeetingRequestDto.UpdateRequest.SpeakerUpdate speakerReq : request.getSpeakers()) {
                 meeting.getSpeakers().stream()
                        .filter(s -> s.getSpeakerId().equals(speakerReq.getSpeakerId()))
                        .findFirst()
-                       .ifPresent(s -> {
+                       .ifPresent(speaker -> {
+                           // 이름 수정
                            if (speakerReq.getName() != null && !speakerReq.getName().isBlank()) {
-                               s.setName(speakerReq.getName());
+                               speaker.setName(speakerReq.getName());
+                           }
+
+                           // 세그먼트 수정 (기존 전체 삭제 후 새로 추가)
+                           if (speakerReq.getSegments() != null) {
+                               speaker.getSegments().clear();
+                               for (MeetingRequestDto.UpdateRequest.SpeakerUpdate.SegmentUpdate segReq : speakerReq.getSegments()) {
+                                   SegmentEntity newSegment = SegmentEntity.create(
+                                           speaker,
+                                           segReq.getStart(),
+                                           segReq.getEnd(),
+                                           segReq.getText()
+                                   );
+                                   speaker.getSegments().add(newSegment);
+                               }
                            }
                        });
             }

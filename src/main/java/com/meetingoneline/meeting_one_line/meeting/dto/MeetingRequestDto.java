@@ -80,13 +80,21 @@ public class MeetingRequestDto {
         private List<SpeakerUpdate> speakers;
 
         @Getter
-        @NoArgsConstructor
-        @AllArgsConstructor
         @Builder
         @Schema(description = "화자 이름 수정 DTO")
         public static class SpeakerUpdate {
             private String speakerId;
             private String name;
+            private List<SegmentUpdate> segments;
+
+            @Getter
+            @Setter
+            @Schema(description = "발화 수정 DTO")
+            public static class SegmentUpdate{
+                private Float start;
+                private Float end;
+                private String text;
+            }
         }
     }
 
