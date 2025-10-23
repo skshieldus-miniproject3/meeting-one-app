@@ -103,7 +103,7 @@ public class MeetingController {
             @RequestParam(required = false) String summary,
             @RequestParam(required = false) String status
     ) {
-        MeetingResponseDto.ListResponse response = meetingService.getMeetings2(userId, page, size, keyword, title, summary, status);
+        MeetingResponseDto.ListResponse response = meetingService.getMeetings(userId, page, size, keyword, title, summary, status);
         return ResponseEntity.ok(response);
     }
 

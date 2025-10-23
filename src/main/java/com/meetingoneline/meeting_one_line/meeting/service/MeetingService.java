@@ -30,6 +30,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -85,6 +87,7 @@ public class MeetingService {
             // 5. AI 서버 분석 요청 시도
             try {
                 aiClient.requestAnalysis(
+                        userId,
                         meeting.getId(),
                         destination.getAbsolutePath(),
                         error -> updateMeetingStatus(meeting.getId(), RecordSaveStatus.FAILED, "AI 서버 요청 실패")
@@ -118,7 +121,7 @@ public class MeetingService {
 
         log.info("📥 AI 콜백 수신: meetingId={}, status={}, summary={}", meetingId, request.getStatus(), request.getSummary());
 
-        // ✅ 화자 목록 로그 출력
+        // 화자 목록 로그 출력
         if (request.getSpeakers() != null && !request.getSpeakers().isEmpty()) {
             for (MeetingRequestDto.AiCallbackRequest.Speaker s : request.getSpeakers()) {
                 log.info("🎤 Speaker ID: {}", s.getSpeakerId());
@@ -185,7 +188,7 @@ public class MeetingService {
             String status
     ) {
         try {
-            String responseBody = aiClient.requestSearch(page, size, keyword, title, summary, status)
+            String responseBody = aiClient.requestSearch(userId, page, size, keyword, title, summary, status)
                                           .block();
 
             log.info("AI 서버 응답 수신 완료: {}", responseBody);
@@ -363,6 +366,34 @@ public class MeetingService {
 
         meetingRepository.save(meeting);
 
+        // AI 서버 요청
+        try {
+            var speakers = meeting.getSpeakers().stream()
+                                  .map(sp -> Map.of(
+                                          "speakerId", sp.getSpeakerId(),
+                                          "name", sp.getName(),
+                                          "segments", sp.getSegments().stream()
+                                                        .map(seg -> Map.of(
+                                                                "start", seg.getStartTime(),
+                                                                "end", seg.getEndTime(),
+                                                                "text", seg.getText()
+                                                        )).toList()
+                                  )).toList();
+
+            aiClient.requestUpsertSync(
+                    userId,
+                    meetingId,
+                    meeting.getTitle(),
+                    meeting.getSummary(),
+                    meeting.getKeywords().stream().map(KeywordEntity::getKeyword).toList(),
+                    speakers
+            );
+
+        } catch (BusinessException e) {
+            log.error("❌ AI 서버 업서트 실패 - 트랜잭션 롤백됨 (meetingId={})", meetingId);
+            throw e; // ai 서버 요청 실패시 -> rollback
+        }
+
         return MeetingResponseDto.CommonMessage.builder()
                                                .message("회의록이 수정되었습니다.")
                                                .build();
@@ -388,6 +419,14 @@ public class MeetingService {
         if (file.exists()) {
             boolean deleted = file.delete();
             log.info("🗑 파일 삭제됨: {} (성공여부: {})", file.getAbsolutePath(), deleted);
+        }
+
+        // AI 서버 임베딩 삭제 요청
+        try {
+            aiClient.requestDeleteEmbeddingSync(userId, meetingId);
+        } catch (BusinessException e) {
+            log.error("❌ AI 서버 삭제 요청 실패 - 트랜잭션 롤백됨 (meetingId={})", meetingId);
+            throw e;
         }
 
         meetingRepository.save(meeting);
