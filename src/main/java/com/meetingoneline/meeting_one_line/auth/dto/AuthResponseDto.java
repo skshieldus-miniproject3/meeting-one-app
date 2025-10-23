@@ -20,6 +20,15 @@ public class AuthResponseDto {
         private Boolean isDuplicate;
     }
 
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Token{
+        private String accessToken;
+        private String refreshToken;
+    }
+
     /**
      * 회원가입 API 응답
      */
@@ -52,5 +61,13 @@ public class AuthResponseDto {
         private UUID id;
         private String email;
         private String nickname;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class Refresh {
+        private String accessToken;
     }
 }

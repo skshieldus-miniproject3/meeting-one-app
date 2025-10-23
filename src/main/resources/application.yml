@@ -27,8 +27,8 @@ server:
 jwt:
   secret: bXktand0LXNlY3JldC1rZXktY2hhbmdlLWl0
   expiration: 3600000 # 1 hour
-  access-expiration: 1800000      # 30분 (1000 * 60 * 30)
-  refresh-expiration: 1209600000  # 14일 (1000 * 60 * 60 * 24 * 14)
+  access-expiration: 1800000      # 1분 120000 \ 1800000, 30분
+  refresh-expiration: 1209600000  # 2분 240000 \ 1209600000, 14일
 
 file:
   upload-dir: ./uploads/meetings   # 업로드 디렉토리 경로 설정

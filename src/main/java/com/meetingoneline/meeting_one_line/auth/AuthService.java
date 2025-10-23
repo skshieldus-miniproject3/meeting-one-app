@@ -11,6 +11,8 @@ import com.meetingoneline.meeting_one_line.global.exception.ErrorCode;
 import com.meetingoneline.meeting_one_line.user.UserEntity;
 import com.meetingoneline.meeting_one_line.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,11 +28,14 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${jwt.refresh-expiration}")
+    private long refreshExpirationMs;
+
     /**
      * 회원가입
      */
     @Transactional
-    public AuthResponseDto.Signup signup(AuthRequestDto.SignupRequest request){
+    public AuthResponseDto.Token signup(AuthRequestDto.SignupRequest request){
         // 1. 이메일 중복 확인
         if(userRepository.findByEmail(request.getEmail()).isPresent()){
             throw new BusinessException(ErrorCode.DUPLICATE_EMAIL);
@@ -52,14 +57,15 @@ public class AuthService {
 
         String at = jwtTokenProvider.createToken(savedUserEntity.getId().toString(), JwtType.ACCESS);
 
-        // TODO RT Header 추가
         String rt = jwtTokenProvider.createToken(savedUserEntity.getId().toString(), JwtType.REFRESH);
 
         // 4. rt token 저장
         RefreshTokenEntity rtEntity = RefreshTokenEntity.create(savedUserEntity, rt);
         refreshTokenRepository.save(rtEntity);
 
-        return AuthResponseDto.Signup.builder().accessToken(at)
+        return AuthResponseDto.Token.builder()
+                                     .accessToken(at)
+                                     .refreshToken(rt)
                                      .build();
     }
 
@@ -67,7 +73,7 @@ public class AuthService {
      * 로그인
      */
     @Transactional
-    public AuthResponseDto.Login login(AuthRequestDto.EmailLogin request){
+    public AuthResponseDto.Token login(AuthRequestDto.EmailLogin request){
         // 1. 이메일 존재 유무 체크
         UserEntity user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
@@ -80,16 +86,51 @@ public class AuthService {
         // 3. at, rt 생성
         String at = jwtTokenProvider.createToken(user.getId().toString(), JwtType.ACCESS);
 
-        // TODO RT Header 추가
         String rt = jwtTokenProvider.createToken(user.getId().toString(), JwtType.REFRESH);
 
         // 4. rt token 저장
         RefreshTokenEntity rtEntity = RefreshTokenEntity.create(user, rt);
         refreshTokenRepository.save(rtEntity);
 
-        return AuthResponseDto.Login.builder().accessToken(at)
-                                     .build();
+        return AuthResponseDto.Token.builder()
+                                    .accessToken(at)
+                                    .refreshToken(rt)
+                                    .build();
     }
+
+    /**
+     * Access Token 갱신
+     */
+    @Transactional
+    public AuthResponseDto.Refresh refreshAccessToken(String refreshToken) {
+        if (refreshToken == null) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "Refresh Token이 쿠키에 존재하지 않습니다.");
+        }
+
+        // 1. 토큰 유효성 검증
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "Refresh Token이 만료되었거나 유효하지 않습니다.");
+        }
+
+        // 2. 유저 조회
+        String userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+        UserEntity user = userRepository.findById(UUID.fromString(userId))
+                                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 3. DB 존재 여부 확인
+        boolean exists = refreshTokenRepository.existsByUserAndToken(user, refreshToken);
+        if (!exists) {
+            throw new BusinessException(ErrorCode.ACCESS_DENIED, "DB에 존재하지 않는 Refresh Token입니다.");
+        }
+
+        // 4. 새 Access Token 발급
+        String newAccessToken = jwtTokenProvider.createToken(user.getId().toString(), JwtType.ACCESS);
+
+        return AuthResponseDto.Refresh.builder()
+                                      .accessToken(newAccessToken)
+                                      .build();
+    }
+
 
     /**
      * 닉네임 중복확인
@@ -123,5 +164,18 @@ public class AuthService {
         UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         refreshTokenRepository.deleteByUser(user);
+    }
+
+    /**
+     * HttpOnly Refresh Token 쿠키 생성
+     */
+    public ResponseCookie createRefreshCookie(String refreshToken) {
+        return ResponseCookie.from("refreshToken", refreshToken)
+                             .httpOnly(true)
+                             .secure(true)
+                             .path("/")
+                             .maxAge(refreshExpirationMs / 1000)
+                             .sameSite("Strict")
+                             .build();
     }
 }

@@ -10,7 +10,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -50,8 +52,18 @@ public class AuthController {
     )
     @PostMapping("/signup")
     public ResponseEntity<AuthResponseDto.Signup> signup(@Valid @RequestBody AuthRequestDto.SignupRequest request){
-        AuthResponseDto.Signup response = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        AuthResponseDto.Token response = authService.signup(request);
+
+        ResponseCookie refreshCookie = authService.createRefreshCookie(response.getRefreshToken());
+
+        AuthResponseDto.Signup data = AuthResponseDto.Signup.builder()
+                                                            .accessToken(response.getAccessToken())
+                                                            .build();
+
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                             .header(HttpHeaders.SET_COOKIE, String.valueOf(refreshCookie))
+                             .body(data);
     }
 
     /**
@@ -72,7 +84,26 @@ public class AuthController {
     public ResponseEntity<AuthResponseDto.Login> login(
             @Valid @RequestBody AuthRequestDto.EmailLogin request
     ) {
-        AuthResponseDto.Login response = authService.login(request);
+        AuthResponseDto.Token response = authService.login(request);
+
+        ResponseCookie refreshCookie = authService.createRefreshCookie(response.getRefreshToken());
+
+        AuthResponseDto.Login data = AuthResponseDto.Login.builder()
+                                                            .accessToken(response.getAccessToken())
+                                                            .build();
+
+        return ResponseEntity.ok()
+                             .header(HttpHeaders.SET_COOKIE, String.valueOf(refreshCookie))
+                             .body(data);
+    }
+
+    /**
+     * Access Token 갱신
+     */
+    @Operation(summary = "Access Token 재발급", description = "헤더에 포함된 Refresh Token을 검증하고 새로운 Access Token을 발급합니다. (로그인한 상태에서 그냥 요청해도됨)")
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponseDto.Refresh> refresh(@CookieValue(value = "refreshToken", required = false) String refreshToken) {
+        AuthResponseDto.Refresh response = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(response);
     }
 
@@ -129,7 +160,18 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@AuthenticationPrincipal UUID userId) {
         authService.logout(userId);
-        return ResponseEntity.ok().build();
+
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
+                                                    .httpOnly(true)
+                                                    .secure(true)
+                                                    .path("/")
+                                                    .maxAge(0)
+                                                    .sameSite("Strict")
+                                                    .build();
+
+        return ResponseEntity.ok()
+                             .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                             .build();
     }
 
 }
