@@ -111,6 +111,7 @@ public class AiClient {
                               List<String> keywords,
                               List<Map<String, Object>> speakers){
         Map<String, Object> requestBody = Map.of(
+                "meetingId", meetingId,
                 "title", title,
                 "summary", summary,
                 "keywords", keywords,
