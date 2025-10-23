@@ -369,16 +369,18 @@ public class MeetingService {
         // AI 서버 요청
         try {
             var speakers = meeting.getSpeakers().stream()
-                                  .map(sp -> Map.of(
-                                          "speakerId", sp.getSpeakerId(),
-                                          "name", sp.getName(),
-                                          "segments", sp.getSegments().stream()
-                                                        .map(seg -> Map.of(
-                                                                "start", seg.getStartTime(),
-                                                                "end", seg.getEndTime(),
-                                                                "text", seg.getText()
-                                                        )).toList()
+                                  .map(sp -> Map.ofEntries(
+                                          Map.entry("speakerId", sp.getSpeakerId()),
+                                          Map.entry("name", sp.getName() != null ? sp.getName() : ""),
+                                          Map.entry("segments", sp.getSegments().stream()
+                                                                  .map(seg -> Map.ofEntries(
+                                                                          Map.entry("start", seg.getStartTime() != null ? seg.getStartTime() : 0.0),
+                                                                          Map.entry("end", seg.getEndTime() != null ? seg.getEndTime() : 0.0),
+                                                                          Map.entry("text", seg.getText() != null ? seg.getText() : "")
+                                                                  ))
+                                                                  .toList())
                                   )).toList();
+
 
             aiClient.requestUpsertSync(
                     userId,
