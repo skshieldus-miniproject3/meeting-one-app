@@ -31,7 +31,10 @@ public enum ErrorCode {
     TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
     TOKEN_MISSING(HttpStatus.UNAUTHORIZED, "토큰이 존재하지 않습니다."),
 
-    // 4. 회의록 / 데이터 관련
+    // 4. 회의 피드백 관련
+    FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 회의에 대한 피드백을 찾을 수 없습니다."),
+
+    // 5. 회의록 / 데이터 관련
     MEETING_NOT_FOUND(HttpStatus.NOT_FOUND, "회의록을 찾을 수 없습니다."),
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
     INVALID_FILE(HttpStatus.BAD_REQUEST, "유효하지 않은 파일입니다.");

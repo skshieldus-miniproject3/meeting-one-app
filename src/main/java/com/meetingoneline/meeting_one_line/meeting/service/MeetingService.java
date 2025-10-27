@@ -1,6 +1,8 @@
 package com.meetingoneline.meeting_one_line.meeting.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.meetingoneline.meeting_one_line.feedback.entity.*;
+import com.meetingoneline.meeting_one_line.feedback.repository.FeedbackRepository;
 import com.meetingoneline.meeting_one_line.global.exception.BusinessException;
 import com.meetingoneline.meeting_one_line.global.exception.ErrorCode;
 import com.meetingoneline.meeting_one_line.meeting.client.AiClient;
@@ -30,7 +32,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,6 +43,7 @@ public class MeetingService {
 
     private final MeetingRepository meetingRepository;
     private final UserRepository userRepository;
+    private final FeedbackRepository feedbackRepository;
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
 
@@ -119,24 +121,9 @@ public class MeetingService {
         MeetingEntity meeting = meetingRepository.findById(meetingId)
                                                  .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
 
-        log.info("📥 AI 콜백 수신: meetingId={}, status={}, summary={}", meetingId, request.getStatus(), request.getSummary());
 
-        // 화자 목록 로그 출력
-        if (request.getSpeakers() != null && !request.getSpeakers().isEmpty()) {
-            for (MeetingRequestDto.AiCallbackRequest.Speaker s : request.getSpeakers()) {
-                log.info("🎤 Speaker ID: {}", s.getSpeakerId());
-                if (s.getSegments() != null) {
-                    for (MeetingRequestDto.AiCallbackRequest.Segment seg : s.getSegments()) {
-                        log.info("🗣️  Segment - start: {}, end: {}, text: {}", seg.getStart(), seg.getEnd(), seg.getText());
-                    }
-                } else {
-                    log.warn("⚠️  Speaker({}) has no segments.", s.getSpeakerId());
-                }
-            }
-        } else {
-            log.warn("⚠️  AI 콜백에 화자 정보가 없습니다.");
-        }
 
+        log.info("AI 콜백 수신: meetingId={}, status={}, summary={}", meetingId, request.getStatus(), request.getSummary());
 
         // 1. 회의 상태 및 요약문 업데이트
         meeting.updateStatusAndSummary(request.getStatus(), request.getSummary());
@@ -145,23 +132,23 @@ public class MeetingService {
         meeting.getSpeakers().clear();
         meeting.getKeywords().clear();
 
-        // 3. 키워드 추가
+        // 3. 키워드 갱신
         if (request.getKeywords() != null) {
             for (String keyword : request.getKeywords()) {
-                KeywordEntity keywordEntity = KeywordEntity.create(meeting, keyword);
-                meeting.getKeywords().add(keywordEntity);
+                meeting.getKeywords().add(KeywordEntity.create(meeting, keyword));
             }
         }
 
-        // 4. 화자 및 세그먼트 추가
+        // 4. 화자 및 세그먼트 갱신
         if (request.getSpeakers() != null) {
             for (MeetingRequestDto.AiCallbackRequest.Speaker speakerReq : request.getSpeakers()) {
                 SpeakerEntity speaker = SpeakerEntity.create(meeting, speakerReq.getSpeakerId(), null);
 
                 if (speakerReq.getSegments() != null) {
                     for (MeetingRequestDto.AiCallbackRequest.Segment seg : speakerReq.getSegments()) {
-                        SegmentEntity segment = SegmentEntity.create(speaker, seg.getStart(), seg.getEnd(), seg.getText());
-                        speaker.getSegments().add(segment);
+                        speaker.getSegments().add(
+                                SegmentEntity.create(speaker, seg.getStart(), seg.getEnd(), seg.getText())
+                        );
                     }
                 }
 
@@ -169,14 +156,69 @@ public class MeetingService {
             }
         }
 
-        meetingRepository.save(meeting);
+        // 5. 피드백 데이터 생성 또는 갱신
+        if (request.getFeedback() != null) {
+            var feedbackDto = request.getFeedback();
 
-        log.info("✅ 회의({}) 분석 결과 저장 완료", meetingId);
+            FeedbackEntity feedback = meeting.getId() != null
+                    ? feedbackRepository.findByMeetingId(meeting.getId()).orElse(null)
+                    : null;
+
+            if (feedback == null) {
+                feedback = FeedbackEntity.create(meeting);
+            } else {
+                feedback.getActionItems().clear();
+                feedback.getTopics().clear();
+                feedback.getFollowUpCategories().clear();
+            }
+
+            // Action Items
+            if (feedbackDto.getActionItems() != null) {
+                for (var ai : feedbackDto.getActionItems()) {
+                    feedback.getActionItems().add(
+                            ActionItemEntity.create(feedback, ai.getName(), ai.getContent(), ai.getOrderIndex())
+                    );
+                }
+            }
+
+            // Topics
+            if (feedbackDto.getTopics() != null) {
+                for (var topic : feedbackDto.getTopics()) {
+                    feedback.getTopics().add(
+                            TopicEntity.create(feedback, topic.getTitle(), topic.getImportance(), topic.getSummary(), topic.getProportion())
+                    );
+                }
+            }
+
+            // Follow-up Categories & Questions
+            if (feedbackDto.getFollowUpCategories() != null) {
+                for (var cat : feedbackDto.getFollowUpCategories()) {
+                    FollowUpCategoryEntity categoryEntity = FollowUpCategoryEntity.create(feedback, cat.getCategory());
+
+                    if (cat.getQuestions() != null) {
+                        for (var q : cat.getQuestions()) {
+                            categoryEntity.getQuestions().add(
+                                    FollowUpQuestionEntity.create(categoryEntity, q.getQuestion(), q.getOrderIndex())
+                            );
+                        }
+                    }
+
+                    feedback.getFollowUpCategories().add(categoryEntity);
+                }
+            }
+
+            feedbackRepository.save(feedback);
+            log.info("🧠 회의({})의 피드백 데이터 갱신 완료", meetingId);
+        }
+
+        meetingRepository.save(meeting);
+        log.info("✅ 회의({}) 분석 및 피드백 저장 완료", meetingId);
 
         return MeetingResponseDto.AiCallbackResponse.builder()
-                                                    .message("회의록 결과가 성공적으로 저장되었습니다.")
+                                                    .message("회의록 및 피드백 결과가 성공적으로 저장되었습니다.")
                                                     .build();
     }
+
 
     public MeetingResponseDto.ListResponse getMeetings(
             UUID userId,

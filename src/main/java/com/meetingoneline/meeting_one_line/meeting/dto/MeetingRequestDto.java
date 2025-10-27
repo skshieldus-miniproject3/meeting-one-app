@@ -42,6 +42,8 @@ public class MeetingRequestDto {
         private List<String> keywords;
         private List<Speaker> speakers;
 
+        private Feedback feedback;
+
         @Getter
         @NoArgsConstructor
         @AllArgsConstructor
@@ -59,6 +61,55 @@ public class MeetingRequestDto {
             private Float start;
             private Float end;
             private String text;
+        }
+
+        @Getter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class Feedback {
+            private List<ActionItem> actionItems;
+            private List<Topic> topics;
+            private List<FollowUpCategory> followUpCategories;
+
+            @Getter
+            @NoArgsConstructor
+            @AllArgsConstructor
+            @Builder
+            public static class ActionItem {
+                private String name;
+                private String content;
+                private Integer orderIndex;
+            }
+
+            @Getter
+            @NoArgsConstructor
+            @AllArgsConstructor
+            @Builder
+            public static class Topic {
+                private String title;
+                private String importance;
+                private String summary;
+                private Integer proportion;
+            }
+
+            @Getter
+            @NoArgsConstructor
+            @AllArgsConstructor
+            @Builder
+            public static class FollowUpCategory {
+                private String category;
+                private List<Question> questions;
+
+                @Getter
+                @NoArgsConstructor
+                @AllArgsConstructor
+                @Builder
+                public static class Question {
+                    private String question;
+                    private Integer orderIndex;
+                }
+            }
         }
     }
 
