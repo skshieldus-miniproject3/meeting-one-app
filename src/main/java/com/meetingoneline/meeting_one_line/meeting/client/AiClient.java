@@ -74,11 +74,12 @@ public class AiClient {
      * AI 서버 분석 요청 (비동기 fire-and-forget)
      * @param onErrorFailHandler 실패 시 수행할 콜백 (예: DB 상태 변경)
      */
-    public void requestAnalysis(UUID userId, UUID meetingId, String filePath, Consumer<Throwable> onErrorFailHandler) {
+    public void requestAnalysis(UUID userId, UUID meetingId, String filePath, String meetingTitle, Consumer<Throwable> onErrorFailHandler) {
         Map<String, Object> requestBody = Map.of(
                 "userId", userId.toString(),
                 "meetingId", meetingId.toString(),
-                "filePath", filePath
+                "filePath", filePath,
+                "meetingTitle", meetingTitle
         );
 
         log.info("### AI 서버에 분석 요청 시작: /ai/analyze {}", requestBody);

@@ -94,6 +94,7 @@ public class MeetingService {
                         userId,
                         meeting.getId(),
                         destination.getAbsolutePath(),
+                        saved.getTitle(),
                         error -> updateMeetingStatus(meeting.getId(), RecordSaveStatus.FAILED, "AI 서버 요청 실패")
                 );
                 meeting.updateStatusAndSummary(RecordSaveStatus.PROCESSING.name(), null);
@@ -122,7 +123,6 @@ public class MeetingService {
     public MeetingResponseDto.AiCallbackResponse processCallback(UUID meetingId, MeetingRequestDto.AiCallbackRequest request) {
         MeetingEntity meeting = meetingRepository.findById(meetingId)
                                                  .orElseThrow(() -> new BusinessException(ErrorCode.MEETING_NOT_FOUND));
-
 
 
         log.info("AI 콜백 수신: meetingId={}, status={}, summary={}", meetingId, request.getStatus(), request.getSummary());
@@ -210,6 +210,7 @@ public class MeetingService {
             }
 
             feedbackRepository.save(feedback);
+
             log.info("🧠 회의({})의 피드백 데이터 갱신 완료", meetingId);
         }
 

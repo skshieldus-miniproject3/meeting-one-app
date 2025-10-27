@@ -5,6 +5,8 @@
 
 ---
 
+docker exec -it meeting-one-line-db mariadb -u root -p
+
 ## 실행방법
 1. docker pull mariadb:11 (이미지 없을 경우)
 2. docker-compose up -d
