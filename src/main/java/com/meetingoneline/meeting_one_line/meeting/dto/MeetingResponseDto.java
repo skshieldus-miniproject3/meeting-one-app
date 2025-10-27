@@ -39,6 +39,35 @@ public class MeetingResponseDto {
     }
 
     @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "분석 완료 회의 목록 응답 DTO")
+    public static class CheckAnalysisCompleteResponse {
+        @Schema(description = "분석 완료된 회의 리스트")
+        private List<CheckAnalysisComplete> completedMeetings;
+
+        @Getter
+        @NoArgsConstructor
+        @AllArgsConstructor
+        @Builder
+        public static class CheckAnalysisComplete {
+            @Schema(description = "회의 UUID")
+            private UUID meetingId;
+
+            @Schema(description = "회의 제목")
+            private String title;
+
+            @Schema(description = "회의 상태", example = "completed")
+            private RecordSaveStatus status;
+
+            @Schema(description = "생성 시각")
+            private LocalDateTime createdAt;
+        }
+    }
+
+
+    @Getter
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor

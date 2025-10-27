@@ -177,4 +177,24 @@ public class MeetingController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(
+            summary = "AI 분석 진행 상태 조회 (Polling)",
+            description = """
+                로그인한 사용자의 회의 중 **AI 분석이 아직 완료되지 않은(`UPLOADED`, `PROCESSING`) 회의 목록**을 반환합니다.
+                기본적으로 최근 1시간 이내(`created_at >= NOW() - INTERVAL 1 HOUR`) 생성된 회의만 포함됩니다.
+                프론트엔드는 이 API를 5초~10초 간격으로 호출하여 분석 완료 여부를 확인할 수 있습니다.
+                """,
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "조회 성공",
+                            content = @Content(schema = @Schema(implementation = MeetingResponseDto.CheckAnalysisCompleteResponse.class))),
+            }
+    )
+    @GetMapping("/check")
+    public ResponseEntity<MeetingResponseDto.CheckAnalysisCompleteResponse> checkAnalysisComplete(
+            @AuthenticationPrincipal UUID userId
+    ) {
+        MeetingResponseDto.CheckAnalysisCompleteResponse response = meetingService.checkAnalysisComplete(userId);
+        return ResponseEntity.ok(response);
+    }
+
 }

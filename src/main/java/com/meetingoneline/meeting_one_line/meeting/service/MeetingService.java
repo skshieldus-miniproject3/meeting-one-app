@@ -31,7 +31,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -491,4 +493,35 @@ public class MeetingService {
             log.warn("### 회의({}) 상태 변경됨 → {}", meetingId, status);
         });
     }
+
+    @Transactional(readOnly = true)
+    public MeetingResponseDto.CheckAnalysisCompleteResponse checkAnalysisComplete(UUID userId) {
+        UserEntity user = userRepository.findById(userId)
+                                        .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        List<RecordSaveStatus> excludedStatuses = List.of(
+                RecordSaveStatus.COMPLETED,
+                RecordSaveStatus.FAILED
+        );
+
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(1);
+
+        List<MeetingEntity> recentMeetings = meetingRepository.findRecentIncompleteMeetings(user, excludedStatuses, cutoff);
+
+        List<MeetingResponseDto.CheckAnalysisCompleteResponse.CheckAnalysisComplete> list =
+                recentMeetings.stream()
+                              .map(meeting -> MeetingResponseDto.CheckAnalysisCompleteResponse.CheckAnalysisComplete.builder()
+                                                                                                                        .meetingId(meeting.getId())
+                                                                                                                        .title(meeting.getTitle())
+                                                                                                                        .status(meeting.getStatus())
+                                                                                                                        .createdAt(meeting.getCreatedAt())
+                                                                                                                        .build())
+                              .toList();
+
+        return MeetingResponseDto.CheckAnalysisCompleteResponse.builder()
+                                                               .completedMeetings(list)
+                                                               .build();
+    }
+
+
 }
