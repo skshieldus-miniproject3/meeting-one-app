@@ -10,7 +10,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -35,8 +35,14 @@ file:
 
 logging:
   level:
-    org.hibernate.SQL: debug
-    org.springframework.security: debug
+    org.hibernate.SQL: off
+    org.hibernate.type.descriptor.sql: off
+    org.springframework.security: info
+  file:
+    name: /app/logs/app.log   # ✅ 로그 파일 경로 (컨테이너 내부)
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 ai:
   server:

@@ -38,3 +38,4 @@ out/
 .sql
 
 uploads/
+docker-compose.yml
