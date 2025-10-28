@@ -1,6 +1,9 @@
 version: "3.8"
 
 services:
+  # -------------------------------
+  # 1️⃣ Database (MariaDB)
+  # -------------------------------
   mariadb:
     image: mariadb:11.4
     container_name: meeting-one-line-db
@@ -11,10 +14,80 @@ services:
       MYSQL_USER: meeting_user
       MYSQL_PASSWORD: meeting_pass
     ports:
-      - "3306:3306" # host(로컬) 3306 → container 3306
+      - "3306:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
+  # -------------------------------
+  # 2️⃣ Spring Boot Backend (App Server)
+  # -------------------------------
+  app-server:
+    image: tyler12/app-server:0.7
+    container_name: app-server
+    depends_on:
+      - mariadb
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/meeting_one_line
+      SPRING_DATASOURCE_USERNAME: meeting_user
+      SPRING_DATASOURCE_PASSWORD: meeting_pass
+      TZ: Asia/Seoul
+    volumes:
+      - shared_uploads:/app/uploads
+      - app_logs:/app/logs
+
+  # -------------------------------
+  # 3️⃣ AI Server (Python)
+  # -------------------------------
+  ai-server:
+    image: tyler12/ai-server:0.1
+    container_name: ai-server
+    depends_on:
+      - mariadb
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      DB_URL: mariadb
+      DB_NAME: meeting_one_line
+      DB_USER: meeting_user
+      DB_PASS: meeting_pass
+      TZ: Asia/Seoul
+      CLOVA_SPEECH_INVOKE_URL: ######################################
+      CLOVA_SPEECH_SECRET_KEY: ######################################
+      OPENAI_API_KEY: #################################
+      DEFAULT_LANGUAGE: ko-KR
+      CLOVA_SPEECH_LANG: Kor
+      APP_SERVER_CALLBACK_HOST: http://app-server:8080
+
+    volumes:
+      - shared_uploads:/app/uploads
+      - ai_logs:/app/logs
+
+  # -------------------------------
+  # 4️⃣ Frontend (Next.js)
+  # -------------------------------
+  front:
+    image: tyler12/front:0.1
+    container_name: front
+    depends_on:
+      - app-server
+      - ai-server
+    restart: always
+    ports:
+      - "80:3000"
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: "http://######:8080/api"
+# -------------------------------
+# 5️⃣ Volumes
+# -------------------------------
 volumes:
   mariadb_data:
+  shared_uploads:  # ✅ 업로드 파일 공유
+  app_logs:        # ✅ 앱 서버 로그
+  ai_logs:         # ✅ AI 서버 로그
